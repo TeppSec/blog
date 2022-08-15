@@ -1,1 +1,1 @@
-# blog
+# Node.js Blog with MongoDB
