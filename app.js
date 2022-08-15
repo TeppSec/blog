@@ -3,7 +3,7 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const ejs = require('ejs');
-
+const mongoose = require('mongoose');
 const _ = require('lodash');
 
 const homeStartingContent =
@@ -15,6 +15,24 @@ const contactContent =
 
 const app = express();
 
+// Connection to Database
+mongoose
+  .connect(
+    'mongodb+srv://admin-oliver:nlQtKMgFQ1a03iqZ@cluster0.ouqftls.mongodb.net/blog',
+    { useNewUrlParser: true }
+  )
+  .then(() => console.log('Conected to DB ...'))
+  .catch((err) => console.error('Could not connect to DB ...', err));
+
+const postSchema = new mongoose.Schema({
+  title: String,
+  content: String,
+  tags: [String],
+  date: { type: Date, default: Date.now() },
+});
+
+const Post = mongoose.model('Post', postSchema);
+
 app.set('view engine', 'ejs');
 
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -23,9 +41,41 @@ app.use(express.static('public'));
 let posts = [];
 
 app.get('/', (req, res) => {
-  res.render('home', {
-    startingContent: homeStartingContent,
-    posts: posts,
+  Post.find({}, (err, posts) => {
+    res.render('home', {
+      startingContent: homeStartingContent,
+      posts: posts,
+    });
+  });
+});
+
+app.get('/compose', (req, res) => {
+  res.render('compose');
+});
+
+// Input for new post
+app.post('/compose', (req, res) => {
+  const post = new Post({
+    title: req.body.postTitle,
+    content: req.body.postBody,
+  });
+
+  post.save((err) => {
+    if (!err) {
+      res.redirect('/');
+    }
+  });
+});
+
+// Generate dynamic Link
+app.get('/posts/:postId', (req, res) => {
+  const requestedPostId = req.params.postId;
+
+  Post.findOne({ _id: requestedPostId }, (err, post) => {
+    res.render('post', {
+      title: post.title,
+      content: post.content,
+    });
   });
 });
 
@@ -35,34 +85,6 @@ app.get('/about', (req, res) => {
 
 app.get('/contact', (req, res) => {
   res.render('contact', { contact: contactContent });
-});
-
-app.get('/compose', (req, res) => {
-  res.render('compose');
-});
-
-// Input for new post
-app.post('/compose', (req, res) => {
-  const post = {
-    title: req.body.postTitle,
-    content: req.body.postBody,
-  };
-  posts.push(post);
-  res.redirect('/');
-});
-
-app.get('/posts/:postName', (req, res) => {
-  const requestedTitle = _.lowerCase(req.params.postName);
-
-  posts.forEach((post) => {
-    const storedTitle = _.lowerCase(post.title);
-    if (requestedTitle === storedTitle) {
-      res.render('post', {
-        title: post.title,
-        content: post.content,
-      });
-    }
-  });
 });
 
 const port = process.env.PORT || 3000;
