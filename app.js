@@ -18,7 +18,7 @@ const app = express();
 // Connection to Database
 mongoose
   .connect(
-    'mongodb+srv://admin-oliver:nlQtKMgFQ1a03iqZ@cluster0.ouqftls.mongodb.net/blog',
+    'mongodb+srv://<user>:<key>@cluster0.ouqftls.mongodb.net/blog',
     { useNewUrlParser: true }
   )
   .then(() => console.log('Conected to DB ...'))
